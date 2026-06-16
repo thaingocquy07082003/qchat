@@ -31,6 +31,7 @@ public class RedisMessageSubscriber implements MessageListener {
         return switch (event.getType()) {
             case "TYPING"       -> "/topic/conversation." + event.getConversationId() + ".typing";
             case "READ_RECEIPT" -> "/topic/conversation." + event.getConversationId() + ".read";
+            case "CALL_EVENT"   -> "/topic/conversation." + event.getConversationId() + ".call";
             default             -> "/topic/conversation." + event.getConversationId();
         };
     }
