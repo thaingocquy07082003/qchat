@@ -1,5 +1,6 @@
 package com.qchat.qchat.auth.controller;
 
+import com.qchat.qchat.auth.dto.request.GoogleLoginRequest;
 import com.qchat.qchat.auth.dto.request.LoginRequest;
 import com.qchat.qchat.auth.dto.request.RegisterRequest;
 import com.qchat.qchat.auth.dto.request.TokenRefreshRequest;
@@ -47,6 +48,20 @@ public class AuthController {
 
         String deviceInfo = httpRequest.getHeader("User-Agent");
         AuthResponse response = authService.login(request, deviceInfo);
+        return ResponseEntity.ok(ApiResponse.success("Login successful", response));
+    }
+
+    /**
+     * POST /api/v1/auth/google
+     * Body: { idToken }  — idToken comes from Flutter's google_sign_in SDK
+     */
+    @PostMapping("/google")
+    public ResponseEntity<ApiResponse<AuthResponse>> loginWithGoogle(
+            @Valid @RequestBody GoogleLoginRequest request,
+            HttpServletRequest httpRequest) {
+
+        String deviceInfo = httpRequest.getHeader("User-Agent");
+        AuthResponse response = authService.loginWithGoogle(request.getIdToken(), deviceInfo);
         return ResponseEntity.ok(ApiResponse.success("Login successful", response));
     }
 

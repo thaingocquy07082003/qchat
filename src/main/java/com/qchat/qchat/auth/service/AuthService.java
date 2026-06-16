@@ -14,4 +14,6 @@ public interface AuthService {
     AuthResponse refresh(TokenRefreshRequest request);
 
     void logout(String rawRefreshToken, String rawAccessToken);
+
+    AuthResponse loginWithGoogle(String idToken, String deviceInfo);
 }

@@ -4,7 +4,9 @@ import com.qchat.qchat.auth.entity.User;
 import com.qchat.qchat.chat.enums.MessageType;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.JdbcType;
 import org.hibernate.annotations.UuidGenerator;
+import org.hibernate.dialect.type.PostgreSQLEnumJdbcType;
 
 import java.time.OffsetDateTime;
 import java.util.UUID;
@@ -35,6 +37,7 @@ public class Message {
     private String content;
 
     @Enumerated(EnumType.STRING)
+    @JdbcType(PostgreSQLEnumJdbcType.class)
     @Column(name = "message_type", columnDefinition = "message_type", nullable = false)
     @Builder.Default
     private MessageType messageType = MessageType.TEXT;

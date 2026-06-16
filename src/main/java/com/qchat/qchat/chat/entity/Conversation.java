@@ -4,7 +4,9 @@ import com.qchat.qchat.auth.entity.User;
 import com.qchat.qchat.chat.enums.ConversationType;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.JdbcType;
 import org.hibernate.annotations.UuidGenerator;
+import org.hibernate.dialect.type.PostgreSQLEnumJdbcType;
 
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
@@ -26,6 +28,7 @@ public class Conversation {
     private UUID id;
 
     @Enumerated(EnumType.STRING)
+    @JdbcType(PostgreSQLEnumJdbcType.class)
     @Column(name = "type", columnDefinition = "conversation_type", nullable = false)
     @Builder.Default
     private ConversationType type = ConversationType.DIRECT;

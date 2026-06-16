@@ -6,6 +6,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.messaging.simp.config.ChannelRegistration;
 import org.springframework.messaging.simp.config.MessageBrokerRegistry;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import org.springframework.web.socket.config.annotation.EnableWebSocketMessageBroker;
 import org.springframework.web.socket.config.annotation.StompEndpointRegistry;
 import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerConfigurer;
@@ -22,7 +23,8 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     public void configureMessageBroker(MessageBrokerRegistry registry) {
         // In-memory broker for /topic (broadcast) and /queue (per-user)
         registry.enableSimpleBroker("/topic", "/queue")
-                .setHeartbeatValue(new long[]{25000, 25000});
+                .setHeartbeatValue(new long[]{25000, 25000})
+                .setTaskScheduler(heartbeatScheduler());
 
         // Client sends messages to /app/...
         registry.setApplicationDestinationPrefixes("/app");
@@ -33,9 +35,14 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
+        // Web clients (SockJS fallback)
         registry.addEndpoint("/ws")
                 .setAllowedOriginPatterns("*")
                 .withSockJS();
+
+        // Flutter / mobile native WebSocket (no SockJS)
+        registry.addEndpoint("/ws-native")
+                .setAllowedOriginPatterns("*");
     }
 
     @Override
@@ -58,6 +65,14 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
                 .setMessageSizeLimit(128 * 1024)       // 128 KB max message
                 .setSendBufferSizeLimit(512 * 1024)    // 512 KB send buffer
                 .setSendTimeLimit(20_000);              // 20 s send timeout
+    }
+
+    private ThreadPoolTaskScheduler heartbeatScheduler() {
+        ThreadPoolTaskScheduler scheduler = new ThreadPoolTaskScheduler();
+        scheduler.setPoolSize(1);
+        scheduler.setThreadNamePrefix("ws-heartbeat-");
+        scheduler.initialize();
+        return scheduler;
     }
 
     private ThreadPoolTaskExecutor inboundExecutor() {

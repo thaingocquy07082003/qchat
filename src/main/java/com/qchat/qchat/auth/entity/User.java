@@ -3,7 +3,9 @@ package com.qchat.qchat.auth.entity;
 import com.qchat.qchat.auth.enums.OAuthProvider;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.JdbcType;
 import org.hibernate.annotations.UuidGenerator;
+import org.hibernate.dialect.type.PostgreSQLEnumJdbcType;
 
 import java.time.OffsetDateTime;
 import java.util.UUID;
@@ -35,6 +37,7 @@ public class User {
     private String passwordHash;
 
     @Enumerated(EnumType.STRING)
+    @JdbcType(PostgreSQLEnumJdbcType.class)
     @Column(name = "oauth_provider", columnDefinition = "oauth_provider_type", nullable = false)
     @Builder.Default
     private OAuthProvider oauthProvider = OAuthProvider.LOCAL;

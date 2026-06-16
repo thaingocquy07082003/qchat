@@ -7,6 +7,7 @@ import com.qchat.qchat.auth.dto.response.AuthResponse;
 import com.qchat.qchat.auth.entity.RefreshToken;
 import com.qchat.qchat.auth.entity.User;
 import com.qchat.qchat.auth.entity.UserProfile;
+import com.qchat.qchat.auth.enums.OAuthProvider;
 import com.qchat.qchat.auth.repository.RefreshTokenRepository;
 import com.qchat.qchat.auth.repository.UserRepository;
 import com.qchat.qchat.config.JwtProperties;
@@ -14,6 +15,8 @@ import com.qchat.qchat.exception.AppException;
 import com.qchat.qchat.exception.ErrorCode;
 import com.qchat.qchat.security.CustomUserDetails;
 import com.qchat.qchat.security.JwtService;
+import com.qchat.qchat.security.oauth2.GoogleTokenVerifier;
+import com.qchat.qchat.security.oauth2.GoogleTokenVerifier.GoogleIdTokenClaims;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -22,6 +25,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.OffsetDateTime;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 @Service
@@ -35,6 +39,7 @@ public class AuthServiceImpl implements AuthService {
     private final JwtService             jwtService;
     private final JwtProperties          jwtProperties;
     private final StringRedisTemplate    redisTemplate;
+    private final GoogleTokenVerifier    googleTokenVerifier;
 
     private static final String BLACKLIST_PREFIX = "blacklist:";
 
@@ -145,6 +150,52 @@ public class AuthServiceImpl implements AuthService {
                         TimeUnit.MILLISECONDS);
             }
         }
+    }
+
+    // ── Google OAuth2 (mobile) ───────────────────────────────────
+
+    @Override
+    @Transactional
+    public AuthResponse loginWithGoogle(String idToken, String deviceInfo) {
+        GoogleIdTokenClaims claims = googleTokenVerifier.verify(idToken);
+
+        User user = userRepository
+                .findByOauthProviderAndOauthId(OAuthProvider.GOOGLE, claims.googleId())
+                .map(existing -> updateGoogleUser(existing, claims))
+                .orElseGet(() -> registerGoogleUser(claims));
+
+        log.info("Google login for user: {}", user.getUsername());
+        return buildTokenPair(user, deviceInfo);
+    }
+
+    private User registerGoogleUser(GoogleIdTokenClaims claims) {
+        String username = "user_" + UUID.randomUUID().toString().substring(0, 8);
+
+        UserProfile profile = UserProfile.builder()
+                .displayName(claims.name() != null ? claims.name() : username)
+                .avatarUrl(claims.pictureUrl())
+                .build();
+
+        User user = User.builder()
+                .username(username)
+                .email(claims.email())
+                .oauthProvider(OAuthProvider.GOOGLE)
+                .oauthId(claims.googleId())
+                .isEmailVerified(claims.emailVerified())
+                .profile(profile)
+                .build();
+
+        profile.setUser(user);
+        log.info("Registering new Google user: {}", username);
+        return userRepository.save(user);
+    }
+
+    private User updateGoogleUser(User existing, GoogleIdTokenClaims claims) {
+        UserProfile profile = existing.getProfile();
+        if (profile != null && claims.pictureUrl() != null) {
+            profile.setAvatarUrl(claims.pictureUrl());
+        }
+        return userRepository.save(existing);
     }
 
     // ── Private helpers ─────────────────────────────────────────

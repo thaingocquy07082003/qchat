@@ -41,20 +41,21 @@ public class ChatController {
     @MessageMapping("/chat.message")
     public void handleMessage(@Payload SendMessageRequest request, Principal principal) {
         UUID userId = extractUserId(principal);
-        MessageResponse response = messageService.sendMessage(userId, request);
-        // Broadcasting is handled by RedisMessageSubscriber via Redis Pub/Sub
-        log.debug("Message sent by {} to conversation {}", userId, request.getConversationId());
+        log.info("[WS] chat.message | user={} | conversation={}", userId, request.getConversationId());
+        messageService.sendMessage(userId, request);
     }
 
     @MessageMapping("/chat.typing")
     public void handleTyping(@Payload TypingRequest request, Principal principal) {
         UUID userId = extractUserId(principal);
+        log.info("[WS] chat.typing | user={} | conversation={}", userId, request.getConversationId());
         messageService.sendTypingEvent(userId, request);
     }
 
     @MessageMapping("/chat.read")
     public void handleReadReceipt(@Payload ReadReceiptRequest request, Principal principal) {
         UUID userId = extractUserId(principal);
+        log.info("[WS] chat.read | user={} | conversation={}", userId, request.getConversationId());
         messageService.markAsRead(userId, request);
     }
 

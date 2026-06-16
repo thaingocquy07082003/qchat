@@ -4,7 +4,9 @@ import com.qchat.qchat.auth.entity.User;
 import com.qchat.qchat.chat.enums.MemberRole;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.JdbcType;
 import org.hibernate.annotations.UuidGenerator;
+import org.hibernate.dialect.type.PostgreSQLEnumJdbcType;
 
 import java.time.OffsetDateTime;
 import java.util.UUID;
@@ -32,6 +34,7 @@ public class ConversationMember {
     private User user;
 
     @Enumerated(EnumType.STRING)
+    @JdbcType(PostgreSQLEnumJdbcType.class)
     @Column(name = "role", columnDefinition = "member_role", nullable = false)
     @Builder.Default
     private MemberRole role = MemberRole.MEMBER;
